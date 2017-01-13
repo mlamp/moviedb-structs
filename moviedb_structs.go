@@ -1,4 +1,4 @@
-package structs_structs
+package moviedb_structs
 
 import (
 	"strconv"
