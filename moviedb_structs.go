@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"encoding/json"
 	"regexp"
+	"strings"
+	"sort"
 )
 
 type RottenMoviesResponse struct {
@@ -12,20 +14,20 @@ type RottenMoviesResponse struct {
 }
 
 type RottenTvResponse struct {
-	PageCount int `json:"pageCount"`
+	PageCount  int `json:"pageCount"`
 	TotalCount int `json:"totalCount"`
-	TvSeries []RottenTv `json:"tvSeries"`
+	TvSeries   []RottenTv `json:"tvSeries"`
 }
 
 type RottenTv struct {
-	Title string `json:"title"`
-	EndYear json.Number `json:"endYear,omitempty"`
-	StartYear json.Number `json:"startYear"`
+	Title       string `json:"title"`
+	EndYear     json.Number `json:"endYear,omitempty"`
+	StartYear   json.Number `json:"startYear"`
 	PosterImage string `json:"posterImage,omitempty"`
-	MeterClass string `json:"meterClass"`
-	Image string `json:"image"`
-	URL string `json:"url"`
-	MeterValue json.Number `json:"meterValue,omitempty"`
+	MeterClass  string `json:"meterClass"`
+	Image       string `json:"image"`
+	URL         string `json:"url"`
+	MeterValue  json.Number `json:"meterValue,omitempty"`
 }
 
 type RottenMovie struct {
@@ -100,7 +102,13 @@ type Movie struct {
 	Year         int `json:"year"`
 	RottenLink   string `json:"rottenLink"`
 	RottenScores MovieRottenScore `json:"rottenScores"`
-	imdbId       string `json:"imdbId"`
+	ImdbId       string `json:"imdbId"`
+	Actors       []Actor `json:"actors"`
+	MatchScore   int `json:"-"`
+}
+
+type Actor struct {
+	Name string `json:"name"`
 }
 
 type Tv struct {
@@ -108,8 +116,8 @@ type Tv struct {
 	YearFrom     int `json:"yearFrom"`
 	YearTo       int `json:"yearTo"`
 	RottenScores TvRottenScore `json:"rottenScores"`
-	RottenLink string `json:"rottenLink"`
-	imdbId string `json:"imdbId"`
+	RottenLink   string `json:"rottenLink"`
+	ImdbId       string `json:"imdbId"`
 }
 
 type TvRottenScore struct {
@@ -120,7 +128,14 @@ type TvRottenScore struct {
 func MovieFromOmdbSingleResult(omdbMovie OMDbSingleResult) (movie Movie) {
 	movie.Title = omdbMovie.Title
 	movie.Year, _ = strconv.Atoi(string(omdbMovie.Year))
-	movie.imdbId = omdbMovie.ImdbID
+	movie.ImdbId = omdbMovie.ImdbID
+	if omdbMovie.Actors != "" {
+		actors := strings.Split(omdbMovie.Actors, ",")
+		for _, actorName := range actors {
+			actorNames := strings.Fields(actorName)
+			movie.Actors = append(movie.Actors, Actor{Name: strings.Join(actorNames, " ")})
+		}
+	}
 	return movie
 }
 
@@ -130,6 +145,11 @@ func MovieFromRottenMovie(rottenMovie RottenMovie) (movie Movie) {
 	movie.RottenScores.CriticsScore = rottenMovie.Ratings.CriticsScore
 	movie.RottenScores.AudienceScore = rottenMovie.Ratings.AudienceScore
 	movie.RottenLink = rottenMovie.Links.Alternate
+	if len(rottenMovie.AbridgedCast) > 0 {
+		for _, actorName := range rottenMovie.AbridgedCast {
+			movie.Actors = append(movie.Actors, Actor{Name: actorName.Name})
+		}
+	}
 	return movie
 }
 
@@ -156,6 +176,18 @@ func TvFromOmdbSingleResult(omdbResult OMDbSingleResult) (tv Tv) {
 		tv.YearFrom, _ = strconv.Atoi(yearMatches[1]);
 		tv.YearTo, _ = strconv.Atoi(yearMatches[2]);
 	}
-	tv.imdbId = omdbResult.ImdbID
+	tv.ImdbId = omdbResult.ImdbID
 	return tv
+}
+
+// MatchScoreSorter sorts movies by matchScore.
+type MatchScoreSorter []Movie
+
+func (a MatchScoreSorter) Len() int           { return len(a) }
+func (a MatchScoreSorter) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a MatchScoreSorter) Less(i, j int) bool { return a[i].MatchScore > a[j].MatchScore }
+
+func SortMoviesByMatchScore(movies []Movie) ([]Movie) {
+	sort.Sort(MatchScoreSorter(movies))
+	return movies
 }
