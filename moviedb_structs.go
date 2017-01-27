@@ -104,7 +104,7 @@ type Movie struct {
 	RottenScores MovieRottenScore `json:"rottenScores"`
 	ImdbId       string `json:"imdbId"`
 	Actors       []Actor `json:"actors"`
-	MatchScore   int `json:"-"`
+	MatchScore   int `json:"matchScore"`
 }
 
 type Actor struct {
