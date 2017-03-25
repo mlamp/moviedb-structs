@@ -107,7 +107,7 @@ type Movie struct {
 	RottenScores MovieRottenScore `json:"rottenScores"`
 	ImdbId       string           `json:"imdbId"`
 	Actors       []Actor          `json:"actors"`
-	MatchScore   int              `json:"matchScore"`
+	MatchScore   int              `json:"matchScore" datastore:"-"`
 	LastUpdated  time.Time        `json:"-"`
 }
 
@@ -131,6 +131,16 @@ type Tv struct {
 type TvRottenScore struct {
 	CriticsScore  json.Number `json:"criticsScore"`
 	AudienceScore json.Number `json:"audienceScore"`
+}
+
+func MoviesAreEqual(movie1 Movie, movie2 Movie) (isEqual bool) {
+	if movie1.ID != movie2.ID || movie1.RottenScores.AudienceScore != movie2.RottenScores.AudienceScore ||
+		movie1.RottenScores.CriticsScore != movie2.RottenScores.CriticsScore || movie1.RottenLink != movie2.RottenLink ||
+		movie1.ImdbId != movie2.ImdbId || movie1.Title != movie2.Title || movie1.Year != movie2.Year {
+		return false
+	} else {
+		return true
+	}
 }
 
 func MovieFromOmdbSingleResult(omdbMovie OMDbSingleResult) (movie Movie) {
