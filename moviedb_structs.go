@@ -177,7 +177,7 @@ func TvFromRottenTv(rottenTv RottenTv) (tv Tv) {
 	tv.YearTo, _ = strconv.Atoi(string(rottenTv.EndYear))
 	tv.RottenScores.CriticsScore = json.Number(rottenTv.MeterValue)
 	// Cleanup url
-	re := regexp.MustCompile("^(/tv/[a-z_-]{1,25})/?")
+	re := regexp.MustCompile("^(/tv/[0-9a-z_-]{1,25})/?")
 	matches := re.FindStringSubmatch(rottenTv.URL)
 	if len(matches) > 1 {
 		tv.RottenLink = "https://www.rottentomatoes.com" + matches[1]
